@@ -5,21 +5,93 @@ output:
     keep_md: true
 ---
 
+## Loading and preprocessing the data 
 
-## Loading and preprocessing the data
+```{r}
+library(here)
+library(rio)
+library(janitor)
+library(tidyverse)
+library(mice)
 
+data <- import(here("activity.zip"))
 
+```
 
 ## What is mean total number of steps taken per day?
 
+```{r}
+steps_per_day <- data %>% 
+  group_by(date) %>% 
+  summarize(total = sum(steps)) 
+steps_per_day
 
+mean_steps_per_day <- mean(steps_per_day$total, na.rm = TRUE)
+mean_steps_per_day
+
+median_steps_per_day <- median(steps_per_day$total, na.rm = TRUE)
+median_steps_per_day
+
+```
 
 ## What is the average daily activity pattern?
 
+```{r}
+most_steps_period <- data %>% 
+  group_by(interval) %>% 
+  summarize(mean_steps_per_interval = mean(steps, na.rm = TRUE)) %>% 
+  arrange(desc(mean_steps_per_interval))
 
+head(most_steps_period, 1)
+
+plot <- ggplot(data = most_steps_period, mapping = aes(x = interval, y = mean_steps_per_interval))+
+                 geom_col()
+plot
+
+
+```
 
 ## Imputing missing values
 
+```{r}
+md.pattern(data)
 
+tempdata <- mice(data,m=5,maxit=50,meth='pmm',seed=500)
+complete_data <- complete(tempdata,1)
+
+
+steps_per_day_impute <- complete_data %>% 
+  group_by(date) %>% 
+  summarize(total = sum(steps))
+
+##histogram for imputed data
+hist(steps_per_day_impute$total)
+
+#mean and median for imputed data
+mean_steps_per_day_impute <- mean(steps_per_day_impute$total, na.rm = TRUE)
+mean_steps_per_day
+
+median_steps_per_day_impute <- median(steps_per_day_impute$total, na.rm = TRUE)
+median_steps_per_day
+
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+### Weekend
+
+complete_data <- complete_data %>%
+  mutate(weekday.end = ifelse(
+    test = weekdays(date, abbreviate = TRUE) %in% c("Sat", "Sun"),
+    yes = "Weekend",
+    no = "Weekday"
+  ))
+
+steps_weekend <- complete_data %>%
+  group_by(weekday.end) %>%
+  summarise(steps = mean(steps, na.rm = TRUE))
+
+steps_weekend
+
+```
