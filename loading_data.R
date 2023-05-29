@@ -68,5 +68,17 @@ mean_steps_per_day
 median_steps_per_day_impute <- median(steps_per_day_impute$total, na.rm = TRUE)
 median_steps_per_day
 
+### Weekend
 
+complete_data <- complete_data %>%
+  mutate(weekday.end = ifelse(
+    test = weekdays(date, abbreviate = TRUE) %in% c("Sat", "Sun"),
+    yes = "Weekend",
+    no = "Weekday"
+  ))
 
+steps_weekend <- complete_data %>%
+  group_by(weekday.end) %>%
+  summarise(steps = mean(steps, na.rm = TRUE)))
+
+steps_weekend
